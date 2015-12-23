@@ -14,7 +14,8 @@
 		</style>
 	</head>
 	<body>
-		<canvas id="debug" style="position:absolute; left:100px"></canvas>	
+		<canvas id="ribbon" style="position:absolute; left:0; top: 0; width: 100%; height: 50px;"></canvas>	
+		<div id="main" style="position:absolute; top: 50px; left:0; width: 100%; height: calc(100% - 20px)"></canvas>	
 		<script src="js/three/three.min.js"></script>
 		<script src="js/three/extras/OrbitControls.js"></script>
 		<script src="js/three/extras/curves/NURBSCurve.js"></script>
@@ -22,45 +23,70 @@
 
 		<script>
 			
-var container, camera, cameraOrtho, scene, sceneOrtho, renderer, group;
+var container, camera, cameraOrtho, mainScene, curveScene, mainSceneOrtho, renderer, group;
 
-init();
+mainSceneSetup();
 animate();
 geom();
+boxes(7);
 
-function init() {
+function mainSceneSetup() {
 	var width = window.innerWidth;
 	var height = window.innerHeight;
 	
-	container = document.createElement( 'div' );
+	container = document.getElementById('main');
 	document.body.appendChild( container );
-	renderer = new THREE.WebGLRenderer( { antialias: true } );
+	renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
 	renderer.setPixelRatio( window.devicePixelRatio );
 	renderer.setSize( width, height );
+	renderer.setClearColor( 0xffffff, 0);
 	renderer.autoClear = false; 
 	container.appendChild( renderer.domElement );
 	
-	camera = new THREE.PerspectiveCamera( 50, width / height, 1, 1000000 );
-	var dist = 500;
-	camera.position.x = camera.position.y = camera.position.z = dist;
-
+	camera = new THREE.PerspectiveCamera( 50, width / height, 1, 10000 );
+	camera.position.x = camera.position.y = camera.position.z = 500;;
 	camera.lookAt(new THREE.Vector3(0,0,0))
 	
-	cameraOrtho = new THREE.OrthographicCamera( - width / 2, width, height / 2, - height / 2, 1, 10 );
-	cameraOrtho.position.z = 10;
-
 	controls = new THREE.OrbitControls( camera, renderer.domElement );
 	controls.enableDamping = true;
 	controls.dampingFactor = 0.25;
 	controls.enableZoom = true;
 	
-	scene = new THREE.Scene();
-	sceneOrtho = new THREE.Scene();
+	mainScene = new THREE.Scene();
+	curveScene = new THREE.Scene();
 	group = new THREE.Group();
 	group.position.y = 50;
-	scene.add( group );
+	mainScene.add( group );
 	
 	window.addEventListener( 'resize', onWindowResize, false );
+}
+
+function boxes(size) {	
+	var u = 255 / size;
+	var geometry = new THREE.BoxGeometry(u,u,u);
+
+	for(var i = 0; i < size; i++) {			
+		for(var j = 0; j < size; j++) {
+			for(var k = 0; k < size; k++) {
+					var color = new THREE.Color();
+					color.setRGB(i / size, j / size, k / size);
+					var material = new THREE.MeshBasicMaterial( 
+						{
+							color: color,
+							opacity: 0.25, 
+							transparent: true, 
+							depthTest: false, 
+						} 
+					);
+					material.side = THREE.DoubleSide;
+					var cube = new THREE.Mesh( geometry, material );
+					cube.position.x = i * u - 128 + u / 2;
+					cube.position.y = j * u - 128 + u / 2;
+					cube.position.z = k * u - 128 + u / 2;								
+					mainScene.add( cube );
+			}
+		}
+	}
 }
 
 function geom() {
@@ -76,78 +102,53 @@ function geom() {
 				Math.random() * 255,
 				Math.random() * 255,
 				Math.random() * 255,
-				1 // weight of control point: higher means stronger attraction
+				1 
 			)
 		);
 		var knot = ( i + 1 ) / ( j - nurbsDegree );
 		nurbsKnots.push( THREE.Math.clamp( knot, 0, 1 ) );
 	}
+	
 	var nurbsCurve = new THREE.NURBSCurve(nurbsDegree, nurbsKnots, nurbsControlPoints);
 	var nurbsGeometry = new THREE.Geometry();
 	nurbsGeometry.vertices = nurbsCurve.getPoints(200);
-	var nurbsMaterial = new THREE.LineBasicMaterial( { linewidth: 10, color: 0x333333, transparent: true } );
+	var nurbsMaterial = new THREE.LineBasicMaterial( { linewidth: 25, color: 0x0f0f0f, transparent: true } );
 	var nurbsLine = new THREE.Line( nurbsGeometry, nurbsMaterial );
 	nurbsLine.position.set( -255/2., -255/2., -255/2. );
-	group.add( nurbsLine );
-	var nurbsControlPointsGeometry = new THREE.Geometry();
-	nurbsControlPointsGeometry.vertices = nurbsCurve.controlPoints;
-	var nurbsControlPointsMaterial = new THREE.LineBasicMaterial( { linewidth: 2, color: 0x333333, opacity: 0.25, transparent: true } );
-	var nurbsControlPointsLine = new THREE.Line( nurbsControlPointsGeometry, nurbsControlPointsMaterial );
-	nurbsControlPointsLine.position.copy( nurbsLine.position );
-	group.add( nurbsControlPointsLine );
+	curveScene.add( nurbsLine );
+	ribbon(nurbsCurve);
 
-	var width = 500;
-	var height = 20;
-	var data = new Uint8Array(width * 3);
-	var vec = nurbsCurve.getPoints(width);
-	
-	for(var i = 0; i < width; i++) {
-		data[i * 3] = Math.floor(vec[i].x);
-		data[i * 3 + 1] = Math.floor(vec[i].y);
-		data[i * 3 + 2] = Math.floor(vec[i].z);
-	}
-	
-	var texture = new THREE.DataTexture( data, width, 1, THREE.RGBFormat );
-    texture.needsUpdate = true;
-	var material = new THREE.SpriteMaterial({ map: texture });
-	var sprite = new THREE.Sprite(material);
-	sprite.scale.set(window.innerWidth, height, 1);
-	sceneOrtho.add(sprite)
-	sprite.position.set(0, window.innerHeight / 2 - height / 2, 1)
-
-	// color volume				
-	geometry = new THREE.PlaneGeometry( 255, 255 );
-	var loader = new THREE.TextureLoader();
-	for ( var i = 0; i < 255; i ++ ) {
-		texture = loader.load( 'slices/' + i + '.jpeg' );
-		texture.magFilter = THREE.NearestFilter;
-		texture.minFilter = THREE.NearestFilter;
-		mesh = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { map: texture, opacity: 0.025, transparent: true, depthTest: false, blending: THREE.AdditiveBlending } ) );
-		mesh.position.y = i - 255 / 2.;
-		mesh.rotation.x = 90 * Math.PI / 180;
-		mesh.material.side = THREE.DoubleSide;
-		group.add( mesh );
-	}
-	
 	onWindowResize();
 }
 
+function ribbon(curve) {
+	var canvas = document.getElementById('ribbon');
+	var ctx = canvas.getContext('2d');
+	var width = canvas.width;
+	var height = canvas.height;
+	var id = ctx.createImageData(width, height)
+	var d  = id.data;
+	var vec = curve.getPoints(width);
+	var idx = 0;
+	for(var j = 0; j < height; j++) {
+		for(var i = 0; i < width; i++) {
+			d[idx] = Math.floor(vec[i].x);
+			d[idx + 1] = Math.floor(vec[i].y);
+			d[idx + 2] = Math.floor(vec[i].z);
+			d[idx + 3] = 255;
+			idx += 4;
+		}
+	}
+
+	ctx.putImageData( id, 0, 0 );     
+}
+
 function onWindowResize() {
-	
 	var width = window.innerWidth;
 	var height = window.innerHeight;
-	
 	camera.aspect = width / height;
 	camera.updateProjectionMatrix();
-	
-	cameraOrtho.left = -width / 2;
-	cameraOrtho.right = width / 2;
-	cameraOrtho.top = height / 2;
-	cameraOrtho.bottom = -height / 2;
-	
-	cameraOrtho.updateProjectionMatrix();
 	renderer.setSize(window.innerWidth, window.innerHeight);
-
 }
 
 function animate() {
@@ -157,9 +158,9 @@ function animate() {
 
 function render() {
 	renderer.clear();
-	renderer.render( scene, camera );
+	renderer.render( mainScene, camera );
+	renderer.render( curveScene, camera );
 	renderer.clearDepth();
-	renderer.render( sceneOrtho, cameraOrtho );
 }
 
 		</script>
