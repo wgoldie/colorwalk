@@ -1,119 +1,27 @@
-
 <!DOCTYPE html>
 <html lang="en">
-	<!-- based on three.JS examples -->
-	<head>
-		<title>color walk with me</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<style>
-			body {
-				margin: 0px;
-				overflow: hidden;
-			}
-		</style>
-	</head>
-	<body>
-		<canvas id="debug" style="position:absolute; left:100px"></canvas>	
-		<script src="js/three/three.min.js"></script>
-		<script src="js/three/extras/OrbitControls.js"></script>
-		<script src="js/three/extras/curves/NURBSCurve.js"></script>
-		<script src="js/three/extras/curves/NURBSUtils.js"></script>
+<!-- based on three.JS examples -->
 
-		<script>
-			var container, camera, scene, renderer, group;
-			
-			init();
-			animate();
-			geom();
+<head>
+    <title>color walk with me</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+            margin: 0px;
+            overflow: hidden;
+        }
+    </style>
+</head>
 
-			function init() {
-				container = document.createElement( 'div' );
-				document.body.appendChild( container );
-				renderer = new THREE.WebGLRenderer( { antialias: true } );
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				container.appendChild( renderer.domElement );
-				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000000 );
-				camera.position.x = 100;
-				camera.position.y = 100;
-				camera.position.z = 100;
-				camera.lookAt(new THREE.Vector3(0,0,0))
-				controls = new THREE.OrbitControls( camera, renderer.domElement );
-				controls.enableDamping = true;
-				controls.dampingFactor = 0.25;
-				controls.enableZoom = true;
-				scene = new THREE.Scene();
-				group = new THREE.Group();
-				group.position.y = 50;
-				scene.add( group );
-				window.addEventListener( 'resize', onWindowResize, false );
-			}
-
-			function geom() {
-				var nurbsControlPoints = [];
-				var nurbsKnots = [];
-				var nurbsDegree = 3;
-				for ( var i = 0; i <= nurbsDegree; i ++ ) {
-					nurbsKnots.push( 0 );
-				}
-				for ( var i = 0, j = 5; i < j; i ++ ) {
-					nurbsControlPoints.push(
-						new THREE.Vector4(
-							Math.random() * 255,
-							Math.random() * 255,
-							Math.random() * 255,
-							1 // weight of control point: higher means stronger attraction
-						)
-					);
-					var knot = ( i + 1 ) / ( j - nurbsDegree );
-					nurbsKnots.push( THREE.Math.clamp( knot, 0, 1 ) );
-				}
-				var nurbsCurve = new THREE.NURBSCurve(nurbsDegree, nurbsKnots, nurbsControlPoints);
-				var nurbsGeometry = new THREE.Geometry();
-				nurbsGeometry.vertices = nurbsCurve.getPoints(200);
-				var nurbsMaterial = new THREE.LineBasicMaterial( { linewidth: 10, color: 0x333333, transparent: true } );
-				var nurbsLine = new THREE.Line( nurbsGeometry, nurbsMaterial );
-				nurbsLine.position.set( -255/2., -255/2., -255/2. );
-				group.add( nurbsLine );
-				var nurbsControlPointsGeometry = new THREE.Geometry();
-				nurbsControlPointsGeometry.vertices = nurbsCurve.controlPoints;
-				var nurbsControlPointsMaterial = new THREE.LineBasicMaterial( { linewidth: 2, color: 0x333333, opacity: 0.25, transparent: true } );
-				var nurbsControlPointsLine = new THREE.Line( nurbsControlPointsGeometry, nurbsControlPointsMaterial );
-				nurbsControlPointsLine.position.copy( nurbsLine.position );
-				group.add( nurbsControlPointsLine );
-
-				// color volume				
-				geometry = new THREE.PlaneGeometry( 255, 255 );
-				var loader = new THREE.TextureLoader();
-				for ( var i = 0; i < 255; i ++ ) {
-					texture = loader.load( 'slices/' + i + '.jpeg' );
-					texture.magFilter = THREE.NearestFilter;
-					texture.minFilter = THREE.NearestFilter;
-					mesh = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { map: texture, opacity: 0.025, transparent: true, depthTest: false, blending: THREE.AdditiveBlending } ) );
-					mesh.position.y = i - 255 / 2.;
-					mesh.rotation.x = 90 * Math.PI / 180;
-					mesh.material.side = THREE.DoubleSide;
-					group.add( mesh );
-				}
-			}
-
-			function onWindowResize() {
-				camera.aspect = window.innerWidth / window.innerHeight;
-				camera.updateProjectionMatrix();
-				renderer.setSize( window.innerWidth, window.innerHeight );
-			}
-
-			function animate() {
-				requestAnimationFrame( animate );
-				render();
-			}
-
-			function render() {
-				renderer.render( scene, camera );
-			}
-
-		</script>
-
-	</body>
+<body>
+    <canvas id="ribbon" style="position:absolute; left:0; top: 0; width: 100%; height: 50px;"></canvas>
+    <div id="main" style="position:absolute; top: 50px; left:0; width: 100%; height: calc(100% - 20px)">
+        </canvas>
+        <script src="js/three/three.min.js"></script>
+        <script src="js/three/extras/OrbitControls.js"></script>
+        <script src="js/three/extras/curves/NURBSCurve.js"></script>
+        <script src="js/three/extras/curves/NURBSUtils.js"></script>
+        <script src="js/main.js"></script>
+</body>
 </html>
