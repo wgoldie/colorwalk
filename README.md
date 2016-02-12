@@ -9,4 +9,4 @@ The path, ideally a continuous function such as a spline or arc, is sampled to c
 Using a color space that has a near-isomorphic mapping of perceptual distance to euclidian distance, such as L\*a\*b, will result in a smoother colorwalk (I think).
 
 This is an initial implementation of colorwalk visualization and computation, in three.js and webgl. Color spaces are rendered roughly from primitive shapes.
-Javascript's annoying number and color handling means I will probably rewrite the code in something else soon.
+For various reasons, including interop and Javascript's annoying number and color handling, I will probably rewrite this in Cinder (C++) or a similar creative coding framework soon.
