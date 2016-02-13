@@ -50,6 +50,10 @@ function keyDown(e) {
     case 'H':
         regenDisplay('hsl');
         break;
+    case 'l':
+    case 'L':
+        regenDisplay('lab');
+        break;
     }
 }
 
@@ -68,9 +72,34 @@ function regenDisplay(mode) {
         case 'hsl':
             mainScene.add(hsl(16, 5, 5));
             break;
+        case 'lab':
+            mainScene.add(lab(7));
     }
-
+    
     curve(mode);
+}
+
+// todo: rgb conversion is lossy here?
+function lab(units)  {
+    var lUnits = units;
+    var abUnits = 1.0 * units;
+    var group = new THREE.Group();
+    var lU = 100.0 / lUnits;
+    var abU = 100.0 / abUnits;
+    var geometry = new THREE.BoxGeometry(lU, abU, abU);
+    for (var i = 0; i < units; i++) {
+        for (var j = -abUnits; j <= abUnits; j++) {
+            for (var k = -abUnits; k <= abUnits; k++) {
+                var d3RGB = d3.lab(i,j,k).rgb;
+                var threeRGB = new THREE.Color(d3RGB.r + d3RGB.g + d3RGB.b);
+                var cube = new THREE.Mesh(geometry, transparentMat(threeRGB));
+                cube.position.x = i * lU - 0.5 + lU / 2;
+                cube.position.y = j * abU - 0.5 + abU / 2;
+                cube.position.z = k * abU - 0.5 + abU / 2;
+                group.add(cube);
+            }
+        }
+    }
 }
 
 function rgb(units) {
@@ -170,6 +199,11 @@ function curve(mode) {
                 p.add(new THREE.Vector3(0.5, 0.5, 0.5));
                 nurbsControlPoints.push(new THREE.Vector4(p.x, Math.random(), p.z, 1));
                 break;
+            case 'lab':
+                nurbsControlPoints.push(new THREE.Vector4(
+                    Math.random(),
+                    Math.random(),
+                    Math.random(), 1));
         }
 
         nurbsKnots.push(THREE.Math.clamp((i + 1) / (j - nurbsDegree), 0, 1));
